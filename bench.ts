@@ -153,8 +153,14 @@ async function main() {
   });
 
   // Print table
-  console.log(`\nString deserialization benchmark`);
-  console.log(`${BENCH_TIME_MS / 1000}s per fixture per version, minimum of best rounds\n`);
+  console.log();
+  console.log("String deserialization benchmark");
+  console.log("--------------------------------\n");
+  console.log(`${BENCH_TIME_MS}ms per fixture per version, minimum of best rounds.\n`);
+  console.log("* ASCII column is % of source length which is before first non-ASCII byte.");
+  console.log('  "100%" for files which are 100% ASCII.');
+  console.log("* non-src column is % of strings which are outside the source region.");
+  console.log('  "-" for files where all strings are in the source region.\n');
 
   // Compute minimum column widths
   const nameColWidth = Math.max("File".length, ...fixtureNames.map((name) => name.length));
