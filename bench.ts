@@ -157,8 +157,6 @@ async function main() {
   console.log(`${BENCH_TIME_MS / 1000}s per fixture per version, minimum of best rounds\n`);
 
   // Compute minimum column widths
-  const sep = " | ";
-  const sepLine = "-+-";
   const nameColWidth = Math.max("File".length, ...fixtureNames.map((name) => name.length));
   const nonAsciiHeader = "ASCII";
   const nonAsciiColWidth = Math.max(
@@ -182,39 +180,46 @@ async function main() {
   const fastestPctWidth = Math.max(...fastestPcts.map((pct) => pct.length));
   const fastestColWidth = fastestNameWidth + (fastestPctWidth > 0 ? 1 + fastestPctWidth : 0);
 
+  function markdownRow(parts: string[]): string {
+    return `| ${parts.join(" | ")} |`;
+  }
+
   // Header
-  const headerParts = [
-    "File".padEnd(nameColWidth),
-    nonAsciiHeader.padStart(nonAsciiColWidth),
-    nonSourceHeader.padStart(nonSourceColWidth),
-    ...versionNames.map((name, colIndex) => name.padStart(colWidths[colIndex])),
-    fastestHeader.padEnd(fastestColWidth),
-  ];
-  console.log(headerParts.join(sep));
+  console.log(
+    markdownRow([
+      "File".padEnd(nameColWidth),
+      nonAsciiHeader.padStart(nonAsciiColWidth),
+      nonSourceHeader.padStart(nonSourceColWidth),
+      ...versionNames.map((name, colIndex) => name.padStart(colWidths[colIndex])),
+      fastestHeader.padEnd(fastestColWidth),
+    ]),
+  );
 
   // Separator
-  const sepParts = [
-    "-".repeat(nameColWidth),
-    "-".repeat(nonAsciiColWidth),
-    "-".repeat(nonSourceColWidth),
-    ...colWidths.map((width) => "-".repeat(width)),
-    "-".repeat(fastestColWidth),
-  ];
-  console.log(sepParts.join(sepLine));
+  console.log(
+    markdownRow([
+      "-".repeat(nameColWidth),
+      "-".repeat(nonAsciiColWidth - 1) + ":",
+      "-".repeat(nonSourceColWidth - 1) + ":",
+      ...colWidths.map((width) => "-".repeat(width - 1) + ":"),
+      "-".repeat(fastestColWidth),
+    ]),
+  );
 
   // Rows
   for (let rowIndex = 0; rowIndex < fixtureNames.length; rowIndex++) {
-    const rowParts = [
-      fixtureNames[rowIndex].padEnd(nameColWidth),
-      nonAsciiPcts[rowIndex].padStart(nonAsciiColWidth),
-      nonSourcePcts[rowIndex].padStart(nonSourceColWidth),
-      ...colWidths.map((width, colIndex) => formatted[rowIndex][colIndex].padStart(width)),
-      fastestNames[rowIndex].padEnd(fastestNameWidth) +
-        (fastestPcts[rowIndex] ? " " + fastestPcts[rowIndex] : "").padEnd(
-          fastestColWidth - fastestNameWidth,
-        ),
-    ];
-    console.log(rowParts.join(sep));
+    console.log(
+      markdownRow([
+        fixtureNames[rowIndex].padEnd(nameColWidth),
+        nonAsciiPcts[rowIndex].padStart(nonAsciiColWidth),
+        nonSourcePcts[rowIndex].padStart(nonSourceColWidth),
+        ...colWidths.map((width, colIndex) => formatted[rowIndex][colIndex].padStart(width)),
+        fastestNames[rowIndex].padEnd(fastestNameWidth) +
+          (fastestPcts[rowIndex] ? " " + fastestPcts[rowIndex] : "").padEnd(
+            fastestColWidth - fastestNameWidth,
+          ),
+      ]),
+    );
   }
 }
 
