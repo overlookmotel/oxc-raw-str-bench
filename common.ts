@@ -11,7 +11,6 @@ export interface Fixture {
   sourceText: string;
   sourceIsAscii: boolean;
   sourceEndPos: number;
-  firstNonAsciiPos: number;
   // Byte offsets into `uint8` for each string's descriptor (pos, 0, len, 0)
   strBinOffsets: number[];
   // Expected strings for verification
@@ -80,22 +79,12 @@ function loadFixture(name: string): Fixture {
     strBinOffsets.push(strBinStart + i * 16);
   }
 
-  // Find firstNonAsciiPos in the source region
-  let firstNonAsciiPos = sourceEndPos;
-  for (let i = 0; i < sourceEndPos; i++) {
-    if (uint8[i] >= 128) {
-      firstNonAsciiPos = i;
-      break;
-    }
-  }
-
   return {
     name,
     uint8,
     sourceText,
     sourceIsAscii,
     sourceEndPos,
-    firstNonAsciiPos,
     strBinOffsets,
     strings,
   };

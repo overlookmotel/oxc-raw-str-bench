@@ -129,8 +129,15 @@ async function main() {
   // Non-ASCII position as percentage of source length.
   // 100% means file is entirely ASCII, lower values mean non-ASCII bytes appear earlier.
   const nonAsciiPcts = fixtures.map((f) => {
-    const pct = (f.firstNonAsciiPos / f.sourceEndPos) * 100;
-    return pct.toFixed(1) + "%";
+    const { uint8, sourceEndPos } = f;
+    let firstNonAsciiPos = sourceEndPos;
+    for (let i = 0; i < sourceEndPos; i++) {
+      if (uint8[i] >= 128) {
+        firstNonAsciiPos = i;
+        break;
+      }
+    }
+    return ((firstNonAsciiPos / sourceEndPos) * 100).toFixed(1) + "%";
   });
 
   // Percentage of strings whose pos is outside the source region
