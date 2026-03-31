@@ -118,8 +118,9 @@ export function injectState(buffer, sourceTextInput, sourceByteLen) {
  * then imports and returns them.
  *
  * @param baseline - Name of the version to put first. Remaining versions are sorted alphabetically.
- * @param filter - Names of versions to use (optional). Must include `baseline` if provided.
- * @returns - Array of versions, sorted by name with baseline first.
+ * @param filter - Names of versions to use (optional).
+ *   If provided, returned array of versions is sorted in this order. `baseline` is ignored.
+ * @returns - Array of versions, sorted by name with baseline first, or in order of `filter` if provided.
  */
 export async function loadAllVersions(
   baseline: string,
@@ -128,10 +129,7 @@ export async function loadAllVersions(
   fs.mkdirSync(COMPILED_DIR, { recursive: true });
 
   let filterSet: Set<string> | null = null;
-  if (filter != null) {
-    filterSet = new Set(filter);
-    assert(filterSet.has(baseline), "`filter` must include `baseline` if `filter` is set");
-  }
+  if (filter != null) filterSet = new Set(filter);
 
   const filenames = fs.readdirSync(VERSIONS_DIR);
 
@@ -151,11 +149,19 @@ export async function loadAllVersions(
     versions.push({ name, injectState: mod.injectState, deserializeStr: mod.deserializeStr });
   }
 
-  versions.sort((version1, version2) => {
-    if (version1.name === baseline) return -1;
-    if (version2.name === baseline) return 1;
-    return version1.name < version2.name ? -1 : 1;
-  });
+  if (filter != null) {
+    assert(versions.length === filter.length, "Some versions specified in `filter` not found");
+
+    versions.sort(
+      (version1, version2) => filter.indexOf(version1.name) - filter.indexOf(version2.name),
+    );
+  } else {
+    versions.sort((version1, version2) => {
+      if (version1.name === baseline) return -1;
+      if (version2.name === baseline) return 1;
+      return version1.name < version2.name ? -1 : 1;
+    });
+  }
 
   return versions;
 }
