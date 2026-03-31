@@ -67,6 +67,27 @@ async function main() {
     return fixture1.name < fixture2.name ? -1 : 1;
   });
 
+  // Create a separate call-loop function for each version using `new Function`.
+  //
+  // In production, there's only one `deserializeStr`, so V8 has a monomorphic inline cache (IC)
+  // and can inline the function for maximum speed. If we benchmarked all versions through
+  // a shared call site, V8's IC would go polymorphic after the first version, adding dispatch
+  // overhead that doesn't exist in production - and the first version would get an unfair
+  // monomorphic advantage while all others pay a polymorphic penalty.
+  //
+  // `new Function` creates a fresh V8 compilation unit per version, each with its own ICs.
+  // Every version gets monomorphic dispatch, matching production conditions.
+  // A unique comment per version prevents V8 from sharing compiled code across them.
+  const runners = versions.map(
+    (_version, index) =>
+      // eslint-disable-next-line typescript/no-implied-eval
+      new Function(
+        "deserializeStr",
+        "strBinOffsets",
+        `// v${index}\nfor (let i = 0; i < strBinOffsets.length; i++) deserializeStr(strBinOffsets[i]);`,
+      ) as (deserializeStr: (pos: number) => string, strBinOffsets: number[]) => void,
+  );
+
   // Benchmark all versions against all fixtures.
   // Collect results first, then format the table with tight column widths.
   const rawTimes: number[][] = []; // rawTimes[fixture][version] in ms
@@ -76,10 +97,12 @@ async function main() {
     console.log(`Benchmarking ${fixtureIndex + 1}/${fixtures.length} ${fixture.name}`);
 
     const { uint8, sourceText, sourceEndPos, strBinOffsets } = fixture;
-    const callsLen = strBinOffsets.length;
     const row: number[] = [];
 
-    for (const version of versions) {
+    for (let versionIndex = 0; versionIndex < versions.length; versionIndex++) {
+      const version = versions[versionIndex];
+      const runCalls = runners[versionIndex];
+
       version.injectState(uint8, sourceText, sourceEndPos);
 
       const { deserializeStr } = version;
@@ -89,9 +112,7 @@ async function main() {
       let warmupTotal = 0;
       for (let i = 0; i < WARMUP_ROUNDS; i++) {
         const start = performance.now();
-        for (let callIndex = 0; callIndex < callsLen; callIndex++) {
-          deserializeStr(strBinOffsets[callIndex]);
-        }
+        runCalls(deserializeStr, strBinOffsets);
         const end = performance.now();
         warmupTotal += end - start;
       }
@@ -111,9 +132,7 @@ async function main() {
       while (rounds < MIN_ROUNDS || performance.now() < deadline) {
         const start = performance.now();
         for (let i = 0; i < cyclesPerRound; i++) {
-          for (let callIndex = 0; callIndex < callsLen; callIndex++) {
-            deserializeStr(strBinOffsets[callIndex]);
-          }
+          runCalls(deserializeStr, strBinOffsets);
         }
         const end = performance.now();
         const elapsed = (end - start) / cyclesPerRound;
