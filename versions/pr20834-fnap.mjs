@@ -1,5 +1,8 @@
 /**
- * PR #20834 + `firstNonAsciiPos`: extends `substr` fast path into non-ASCII sources.
+ * PR #20834.
+ *
+ * `current` with the following changes:
+ * - `TextDecoder` for len > 9.
  */
 
 // oxlint-disable prefer-const
@@ -25,13 +28,27 @@ export function setup() {
 export function deserializeStr(pos) {
   let pos32 = pos >> 2,
     len = uint32[pos32 + 2];
+
+  // Early return for empty strings
   if (len === 0) return "";
+
   pos = uint32[pos32];
+
+  // If string is in source region and either:
+  // 1. Source is all ASCII, or
+  // 2. String is before first non-ASCII byte in source
+  // then use `sourceText.substr`
   if (pos < sourceEndPos && (sourceIsAscii || pos + len <= firstNonAsciiPos)) {
     return sourceText.substr(pos, len);
   }
+
   let end = pos + len;
+
+  // If longer than 9 bytes, use `TextDecoder`
   if (len > 9) return decodeStr(uint8.subarray(pos, end));
+
+  // Concat bytes into string.
+  // If any byte is non-ASCII, use `TextDecoder`.
   let out = "",
     c;
   do {
@@ -42,5 +59,6 @@ export function deserializeStr(pos) {
       break;
     }
   } while (pos < end);
+
   return out;
 }
