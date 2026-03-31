@@ -12,6 +12,8 @@
 
 // oxlint-disable no-console
 
+import fs from "node:fs";
+import { join as pathJoin } from "node:path";
 import { loadAllFixtures, loadAllVersions } from "./common.ts";
 import {
   injectState as injectStateOriginal,
@@ -37,7 +39,10 @@ for (const version of versions) {
   console.log(`====================\n${version.name}\n====================`);
 
   for (const fixture of fixtures) {
-    const { name, uint8, sourceText, sourceEndPos, strBinOffsets, strings } = fixture;
+    const { name, dirPath, uint8, sourceText, sourceEndPos, strBinOffsets } = fixture;
+    const strings: string[] = JSON.parse(
+      fs.readFileSync(pathJoin(dirPath, "strings.json"), "utf8"),
+    );
 
     console.log(`  ${name}`);
 

@@ -14,8 +14,6 @@ export interface Fixture {
   sourceEndPos: number;
   // Byte offsets into `uint8` for each string's descriptor (pos, 0, len, 0)
   strBinOffsets: number[];
-  // Expected strings for verification
-  strings: string[];
 }
 
 export interface Version {
@@ -57,8 +55,6 @@ function loadFixture(name: string): Fixture {
   const sourceBytes = fs.readFileSync(pathJoin(dirPath, "source.txt"));
   const strDataBytes = fs.readFileSync(pathJoin(dirPath, "strData.txt"));
   const strBinBytes = fs.readFileSync(pathJoin(dirPath, "strBin.bin"));
-  const strings: string[] = JSON.parse(fs.readFileSync(pathJoin(dirPath, "strings.json"), "utf8"));
-
   const stringDataLen = sourceBytes.length + strDataBytes.length;
   // Align strBin start to 8-byte boundary (required for Float64Array view)
   const strBinStart = (stringDataLen + 7) & ~7;
@@ -88,7 +84,6 @@ function loadFixture(name: string): Fixture {
     sourceIsAscii,
     sourceEndPos,
     strBinOffsets,
-    strings,
   };
 }
 
