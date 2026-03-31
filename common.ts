@@ -33,10 +33,16 @@ export const decodeStr = textDecoder.decode.bind(textDecoder);
  * Load all fixtures from the fixtures directory.
  */
 export function loadAllFixtures(): Fixture[] {
-  return fs
-    .readdirSync(FIXTURES_DIR_PATH, { withFileTypes: true })
-    .filter((file) => file.isDirectory())
-    .map((file) => loadFixture(file.name));
+  const files = fs.readdirSync(FIXTURES_DIR_PATH, { withFileTypes: true });
+
+  const fixtures: Fixture[] = [];
+  for (const file of files) {
+    if (file.isDirectory()) fixtures.push(loadFixture(file.name));
+  }
+
+  fixtures.sort((fixture1, fixture2) => (fixture1.name < fixture2.name ? -1 : 1));
+
+  return fixtures;
 }
 
 /**
