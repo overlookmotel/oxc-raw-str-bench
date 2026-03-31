@@ -90,7 +90,7 @@ async function main() {
 
   // Benchmark all versions against all fixtures.
   // Collect results first, then format the table with tight column widths.
-  const rawTimes: number[][] = []; // rawTimes[fixture][version] in ms
+  const rawTimes: number[][] = []; // rawTimes[fixture][version] in nanoseconds
 
   for (let fixtureIndex = 0; fixtureIndex < fixtures.length; fixtureIndex++) {
     const fixture = fixtures[fixtureIndex];
@@ -140,7 +140,9 @@ async function main() {
         rounds++;
       }
 
-      row.push(best);
+      // Convert ms per file to ns per string
+      const nsPerString = (best / strBinOffsets.length) * 1_000_000;
+      row.push(nsPerString);
     }
 
     rawTimes.push(row);
@@ -157,12 +159,12 @@ async function main() {
   const versionNames = versions.map((version) => version.name);
   const fixtureNames = fixtures.map((fixture) => fixture.name);
   const formatted = rawTimes.map((row) => {
-    const baselineMs = row[0];
-    return row.map((ms, colIndex) => {
-      const msStr = ms.toFixed(3) + "ms";
-      if (colIndex === 0) return msStr;
-      const pct = ((ms - baselineMs) / baselineMs) * 100;
-      return `${msStr} ${formatPctDiff(pct)}`;
+    const baselineNs = row[0];
+    return row.map((ns, colIndex) => {
+      const nsStr = ns.toFixed(1) + "ns";
+      if (colIndex === 0) return nsStr;
+      const pct = ((ns - baselineNs) / baselineNs) * 100;
+      return `${nsStr} ${formatPctDiff(pct)}`;
     });
   });
 
@@ -193,6 +195,7 @@ async function main() {
   console.log("String deserialization benchmark");
   console.log("--------------------------------\n");
   console.log(`${BENCH_TIME_MS}ms per fixture per version, minimum of best rounds.\n`);
+  console.log("* Timings are in nanoseconds per string.");
   console.log("* ASCII column is % of source length which is before first non-ASCII byte.");
   console.log('  "100%" for files which are 100% ASCII.');
   console.log("* non-src column is % of strings which are outside the source region.");
