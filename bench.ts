@@ -47,13 +47,15 @@ async function main() {
     for (const version of versions) {
       version.injectState(uint8, sourceText, sourceEndPos);
 
+      const { deserializeStr } = version;
+
       // Warmup: run a few cycles to let JIT stabilize, and measure how long
       // a single cycle takes so we can decide how many cycles per timed round
       let warmupTotal = 0;
       for (let i = 0; i < WARMUP_ROUNDS; i++) {
         const start = performance.now();
         for (let callIndex = 0; callIndex < callsLen; callIndex++) {
-          version.deserializeStr(strBinOffsets[callIndex]);
+          deserializeStr(strBinOffsets[callIndex]);
         }
         const end = performance.now();
         warmupTotal += end - start;
@@ -75,7 +77,7 @@ async function main() {
         const start = performance.now();
         for (let i = 0; i < cyclesPerRound; i++) {
           for (let callIndex = 0; callIndex < callsLen; callIndex++) {
-            version.deserializeStr(strBinOffsets[callIndex]);
+            deserializeStr(strBinOffsets[callIndex]);
           }
         }
         const end = performance.now();

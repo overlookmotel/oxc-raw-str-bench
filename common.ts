@@ -18,7 +18,7 @@ export interface Fixture {
 export interface Version {
   name: string;
   injectState(buffer: Uint8Array, sourceText: string, sourceByteLen: number): void;
-  deserializeStr(pos: number): string;
+  deserializeStr(this: void, pos: number): string;
 }
 
 export const ROOT_DIR_PATH = import.meta.dirname;
