@@ -152,7 +152,7 @@ async function main() {
   function formatPctDiff(pct: number): string {
     const sign = pct <= 0 ? "-" : "+";
     const digits = Math.abs(pct).toFixed(0);
-    return `(${sign}${digits.padStart(2)}%)`;
+    return `${sign}${digits.padStart(2)}%`;
   }
 
   // Format results: time + % difference vs baseline for non-baseline columns
@@ -164,7 +164,7 @@ async function main() {
       const nsStr = ns.toFixed(1) + "ns";
       if (colIndex === 0) return nsStr;
       const pct = ((ns - baselineNs) / baselineNs) * 100;
-      return `${nsStr} ${formatPctDiff(pct)}`;
+      return `${nsStr} (${formatPctDiff(pct)})`;
     });
   });
 
@@ -204,11 +204,6 @@ async function main() {
     values: string[];
   }
 
-  // "Fastest" column combines name + pct
-  const fastestValues = fastestNames.map((name, rowIndex) =>
-    fastestPcts[rowIndex] ? `${name} ${fastestPcts[rowIndex]}` : name,
-  );
-
   const columns: Column[] = [
     { header: "File", align: "left", values: fixtureNames },
     {
@@ -234,7 +229,8 @@ async function main() {
       align: "right" as const,
       values: formatted.map((row) => row[colIndex]),
     })),
-    { header: "fastest", align: "left", values: fastestValues },
+    { header: "fastest", align: "left", values: fastestNames },
+    { header: "by", align: "right", values: fastestPcts },
   ];
 
   // Compute column widths and format table
