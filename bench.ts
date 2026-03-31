@@ -36,9 +36,9 @@ async function main() {
   // Collect results first, then format the table with tight column widths.
   const rawTimes: number[][] = []; // rawTimes[fixture][version] in ms
 
-  for (let f = 0; f < fixtures.length; f++) {
-    const fixture = fixtures[f];
-    console.log(`Benchmarking ${f + 1}/${fixtures.length} ${fixture.name}`);
+  for (let fixtureIndex = 0; fixtureIndex < fixtures.length; fixtureIndex++) {
+    const fixture = fixtures[fixtureIndex];
+    console.log(`Benchmarking ${fixtureIndex + 1}/${fixtures.length} ${fixture.name}`);
 
     const { uint8, sourceText, sourceEndPos, strBinOffsets } = fixture;
     const callsLen = strBinOffsets.length;
@@ -50,10 +50,10 @@ async function main() {
       // Warmup: run a few cycles to let JIT stabilize, and measure how long
       // a single cycle takes so we can decide how many cycles per timed round
       let warmupTotal = 0;
-      for (let r = 0; r < WARMUP_ROUNDS; r++) {
+      for (let i = 0; i < WARMUP_ROUNDS; i++) {
         const start = performance.now();
-        for (let i = 0; i < callsLen; i++) {
-          version.deserializeStr(strBinOffsets[i]);
+        for (let callIndex = 0; callIndex < callsLen; callIndex++) {
+          version.deserializeStr(strBinOffsets[callIndex]);
         }
         const end = performance.now();
         warmupTotal += end - start;
@@ -73,9 +73,9 @@ async function main() {
       const deadline = performance.now() + BENCH_TIME_MS;
       while (rounds < MIN_ROUNDS || performance.now() < deadline) {
         const start = performance.now();
-        for (let c = 0; c < cyclesPerRound; c++) {
-          for (let i = 0; i < callsLen; i++) {
-            version.deserializeStr(strBinOffsets[i]);
+        for (let i = 0; i < cyclesPerRound; i++) {
+          for (let callIndex = 0; callIndex < callsLen; callIndex++) {
+            version.deserializeStr(strBinOffsets[callIndex]);
           }
         }
         const end = performance.now();
@@ -98,15 +98,15 @@ async function main() {
   }
 
   // Format results: time + % difference vs baseline for non-baseline columns
-  const versionNames = versions.map((v) => v.name);
-  const fixtureNames = fixtures.map((f) => f.name);
+  const versionNames = versions.map((version) => version.name);
+  const fixtureNames = fixtures.map((fixture) => fixture.name);
   const formatted = rawTimes.map((row) => {
-    const baselineTime = row[0];
-    return row.map((t, col) => {
-      const time = t.toFixed(3) + "ms";
-      if (col === 0) return time;
-      const pct = ((t - baselineTime) / baselineTime) * 100;
-      return `${time} ${formatPctDiff(pct)}`;
+    const baselineMs = row[0];
+    return row.map((ms, colIndex) => {
+      const msStr = ms.toFixed(3) + "ms";
+      if (colIndex === 0) return msStr;
+      const pct = ((ms - baselineMs) / baselineMs) * 100;
+      return `${msStr} ${formatPctDiff(pct)}`;
     });
   });
 
@@ -116,9 +116,9 @@ async function main() {
   for (const row of rawTimes) {
     const baselineTime = row[0];
     const bestTime = Math.min(...row);
-    const bestIdx = row.indexOf(bestTime);
-    fastestNames.push(versionNames[bestIdx]);
-    if (bestIdx === 0) {
+    const bestIndex = row.indexOf(bestTime);
+    fastestNames.push(versionNames[bestIndex]);
+    if (bestIndex === 0) {
       fastestPcts.push("");
     } else {
       const pct = ((bestTime - baselineTime) / baselineTime) * 100;
@@ -128,8 +128,8 @@ async function main() {
 
   // Non-ASCII position as percentage of source length.
   // 100% means file is entirely ASCII, lower values mean non-ASCII bytes appear earlier.
-  const nonAsciiPcts = fixtures.map((f) => {
-    const { uint8, sourceEndPos } = f;
+  const nonAsciiPcts = fixtures.map((fixture) => {
+    const { uint8, sourceEndPos } = fixture;
     let firstNonAsciiPos = sourceEndPos;
     for (let i = 0; i < sourceEndPos; i++) {
       if (uint8[i] >= 128) {
@@ -141,8 +141,8 @@ async function main() {
   });
 
   // Percentage of strings whose pos is outside the source region
-  const nonSourcePcts = fixtures.map((f) => {
-    const { uint8, sourceEndPos, strBinOffsets } = f;
+  const nonSourcePcts = fixtures.map((fixture) => {
+    const { uint8, sourceEndPos, strBinOffsets } = fixture;
     const uint32 = new Uint32Array(uint8.buffer, uint8.byteOffset, uint8.byteLength >> 2);
     let nonSourceCount = 0;
     for (const offset of strBinOffsets) {
@@ -159,18 +159,27 @@ async function main() {
   // Compute minimum column widths
   const sep = " | ";
   const sepLine = "-+-";
-  const nameColWidth = Math.max("File".length, ...fixtureNames.map((n) => n.length));
+  const nameColWidth = Math.max("File".length, ...fixtureNames.map((name) => name.length));
   const nonAsciiHeader = "ASCII";
-  const nonAsciiColWidth = Math.max(nonAsciiHeader.length, ...nonAsciiPcts.map((s) => s.length));
+  const nonAsciiColWidth = Math.max(
+    nonAsciiHeader.length,
+    ...nonAsciiPcts.map((pct) => pct.length),
+  );
   const nonSourceHeader = "non-src";
-  const nonSourceColWidth = Math.max(nonSourceHeader.length, ...nonSourcePcts.map((s) => s.length));
-  const colWidths = versionNames.map((name, col) => {
-    const maxVal = Math.max(...formatted.map((row) => row[col].length));
+  const nonSourceColWidth = Math.max(
+    nonSourceHeader.length,
+    ...nonSourcePcts.map((pct) => pct.length),
+  );
+  const colWidths = versionNames.map((name, colIndex) => {
+    const maxVal = Math.max(...formatted.map((row) => row[colIndex].length));
     return Math.max(name.length, maxVal);
   });
   const fastestHeader = "fastest";
-  const fastestNameWidth = Math.max(fastestHeader.length, ...fastestNames.map((s) => s.length));
-  const fastestPctWidth = Math.max(...fastestPcts.map((s) => s.length));
+  const fastestNameWidth = Math.max(
+    fastestHeader.length,
+    ...fastestNames.map((name) => name.length),
+  );
+  const fastestPctWidth = Math.max(...fastestPcts.map((pct) => pct.length));
   const fastestColWidth = fastestNameWidth + (fastestPctWidth > 0 ? 1 + fastestPctWidth : 0);
 
   // Header
@@ -178,7 +187,7 @@ async function main() {
     "File".padEnd(nameColWidth),
     nonAsciiHeader.padStart(nonAsciiColWidth),
     nonSourceHeader.padStart(nonSourceColWidth),
-    ...versionNames.map((name, c) => name.padStart(colWidths[c])),
+    ...versionNames.map((name, colIndex) => name.padStart(colWidths[colIndex])),
     fastestHeader.padEnd(fastestColWidth),
   ];
   console.log(headerParts.join(sep));
@@ -188,20 +197,22 @@ async function main() {
     "-".repeat(nameColWidth),
     "-".repeat(nonAsciiColWidth),
     "-".repeat(nonSourceColWidth),
-    ...colWidths.map((w) => "-".repeat(w)),
+    ...colWidths.map((width) => "-".repeat(width)),
     "-".repeat(fastestColWidth),
   ];
   console.log(sepParts.join(sepLine));
 
   // Rows
-  for (let r = 0; r < fixtureNames.length; r++) {
+  for (let rowIndex = 0; rowIndex < fixtureNames.length; rowIndex++) {
     const rowParts = [
-      fixtureNames[r].padEnd(nameColWidth),
-      nonAsciiPcts[r].padStart(nonAsciiColWidth),
-      nonSourcePcts[r].padStart(nonSourceColWidth),
-      ...colWidths.map((w, c) => formatted[r][c].padStart(w)),
-      fastestNames[r].padEnd(fastestNameWidth) +
-        (fastestPcts[r] ? " " + fastestPcts[r] : "").padEnd(fastestColWidth - fastestNameWidth),
+      fixtureNames[rowIndex].padEnd(nameColWidth),
+      nonAsciiPcts[rowIndex].padStart(nonAsciiColWidth),
+      nonSourcePcts[rowIndex].padStart(nonSourceColWidth),
+      ...colWidths.map((width, colIndex) => formatted[rowIndex][colIndex].padStart(width)),
+      fastestNames[rowIndex].padEnd(fastestNameWidth) +
+        (fastestPcts[rowIndex] ? " " + fastestPcts[rowIndex] : "").padEnd(
+          fastestColWidth - fastestNameWidth,
+        ),
     ];
     console.log(rowParts.join(sep));
   }

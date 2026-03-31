@@ -35,8 +35,8 @@ export const decodeStr = textDecoder.decode.bind(textDecoder);
 export function loadAllFixtures(): Fixture[] {
   return fs
     .readdirSync(FIXTURES_DIR_PATH, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => loadFixture(d.name));
+    .filter((file) => file.isDirectory())
+    .map((file) => loadFixture(file.name));
 }
 
 /**
@@ -136,10 +136,10 @@ export async function loadAllVersions(baseline: string, skip: string[] = []): Pr
     versions.push({ name, injectState: mod.injectState, deserializeStr: mod.deserializeStr });
   }
 
-  versions.sort((a, b) => {
-    if (a.name === baseline) return -1;
-    if (b.name === baseline) return 1;
-    return a.name.localeCompare(b.name);
+  versions.sort((version1, version2) => {
+    if (version1.name === baseline) return -1;
+    if (version2.name === baseline) return 1;
+    return version1.name.localeCompare(version2.name);
   });
 
   return versions;

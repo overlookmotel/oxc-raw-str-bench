@@ -81,7 +81,7 @@ async function main(): Promise<void> {
     // Sort a copy by data position to pack non-source strings in same order
     // they were in the original buffer.
     const callsCloned = calls.slice();
-    callsCloned.sort((a, b) => a.pos - b.pos);
+    callsCloned.sort((call1, call2) => call1.pos - call2.pos);
 
     let otherStrings = "",
       otherStringsPos = sourceEndPos;
@@ -125,12 +125,12 @@ async function main(): Promise<void> {
  */
 function getFixtureName(url: string): string {
   const parts = new URL(url).pathname.split("/");
-  const isGh = parts[1] === "gh";
-  const pkg = (isGh ? parts[3] : parts[2]).replace(/@.*$/, "");
-  const file = parts.at(-1)!.replace(/\.[^.]+$/, "");
-  if (pkg === file) return pkg;
-  if (pkg === "benchmark-files") return file;
-  return `${pkg}-${file}`;
+  const isGithub = parts[1] === "gh";
+  const pkg = (isGithub ? parts[3] : parts[2]).replace(/@.*$/, "");
+  const filenameWithoutExt = parts.at(-1)!.replace(/\.[^.]+$/, "");
+  if (pkg === filenameWithoutExt) return pkg;
+  if (pkg === "benchmark-files") return filenameWithoutExt;
+  return `${pkg}-${filenameWithoutExt}`;
 }
 
 const PATCH_CODE = `
