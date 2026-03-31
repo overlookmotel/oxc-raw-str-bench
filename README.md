@@ -56,6 +56,13 @@ The string descriptor at that offset contains two `uint32` values the function n
 
 See `versions/current.mjs` for the baseline implementation.
 
+## Filtering
+
+While working on different versions, you can alter which versions are benchmarked by:
+
+- Skip some versions: Add them to `SKIP` in `bench.ts`.
+- Change the baseline version: Alter `BASELINE` in `bench.ts`.
+
 ## Files
 
 - `construct.ts` - Downloads source files, patches `oxc-parser`'s deserializer for instrumentation,
