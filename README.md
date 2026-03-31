@@ -16,13 +16,13 @@ pnpm install
 
 ```bash
 # 1. Construct fixture data (downloads source files and runs parser)
-node construct.ts
+pnpm run construct
 
 # 2. Verify fixture data produces correct strings
-node verify.ts
+pnpm run verify
 
 # 3. Run benchmark
-node bench.ts
+pnpm run bench
 ```
 
 ## Adding a new version

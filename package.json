@@ -5,6 +5,9 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "construct": "node construct.ts",
+    "verify": "node verify.ts",
+    "bench": "node bench.ts",
     "lint": "oxlint",
     "fmt": "oxfmt"
   },
