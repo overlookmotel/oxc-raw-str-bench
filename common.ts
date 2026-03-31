@@ -23,6 +23,9 @@ export interface Version {
   deserializeStr(this: void, pos: number): string;
 }
 
+// Number of bytes of zero padding after strings data in buffer
+const PADDING_AFTER_STRINGS = 64;
+
 export const ROOT_DIR_PATH = import.meta.dirname;
 export const FIXTURES_DIR_PATH = pathJoin(ROOT_DIR_PATH, "fixtures");
 const VERSIONS_DIR = pathJoin(ROOT_DIR_PATH, "versions");
@@ -63,13 +66,15 @@ function loadFixture(name: string): Fixture {
   const strDataBytes = fs.readFileSync(pathJoin(dirPath, "strData.txt"));
   const strBinBytes = fs.readFileSync(pathJoin(dirPath, "strBin.bin"));
   const stringDataLen = sourceBytes.length + strDataBytes.length;
-  // Align strBin start to 8-byte boundary (required for Float64Array view)
-  const strBinStart = (stringDataLen + 7) & ~7;
+  // Add padding bytes after string data.
+  // Align `strBin` start to 8-byte boundary (these are pointer-aligned on Rust side).
+  const strBinStart = (stringDataLen + PADDING_AFTER_STRINGS + 7) & ~7;
   const totalLen = strBinStart + strBinBytes.length;
 
   const uint8 = new Uint8Array(totalLen);
   uint8.set(sourceBytes, 0);
   uint8.set(strDataBytes, sourceBytes.length);
+  uint8.fill(0, stringDataLen, stringDataLen + PADDING_AFTER_STRINGS);
   uint8.set(strBinBytes, strBinStart);
 
   const sourceEndPos = sourceBytes.length;
