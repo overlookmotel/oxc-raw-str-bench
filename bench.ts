@@ -151,7 +151,7 @@ async function main() {
       if (uint32[offset >> 2] >= sourceEndPos) nonSourceCount++;
     }
     if (nonSourceCount === 0) return "-";
-    return ((nonSourceCount / strBinOffsets.length) * 100).toFixed(1) + "%";
+    return ((nonSourceCount / strBinOffsets.length) * 100).toFixed(2) + "%";
   });
 
   // Print table
