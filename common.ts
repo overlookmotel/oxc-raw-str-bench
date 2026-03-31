@@ -6,6 +6,7 @@ import { pathToFileURL } from "node:url";
 
 export interface Fixture {
   name: string;
+  dirPath: string;
   // Combined buffer: [sourceBytes | strDataBytes | padding | strBin]
   uint8: Uint8Array;
   sourceText: string;
@@ -81,6 +82,7 @@ function loadFixture(name: string): Fixture {
 
   return {
     name,
+    dirPath,
     uint8,
     sourceText,
     sourceIsAscii,
