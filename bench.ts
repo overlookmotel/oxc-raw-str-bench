@@ -133,6 +133,18 @@ async function main() {
     return pct.toFixed(1) + "%";
   });
 
+  // Percentage of strings whose pos is outside the source region
+  const nonSourcePcts = fixtures.map((f) => {
+    const { uint8, sourceEndPos, strBinOffsets } = f;
+    const uint32 = new Uint32Array(uint8.buffer, uint8.byteOffset, uint8.byteLength >> 2);
+    let nonSourceCount = 0;
+    for (const offset of strBinOffsets) {
+      if (uint32[offset >> 2] >= sourceEndPos) nonSourceCount++;
+    }
+    if (nonSourceCount === 0) return "-";
+    return ((nonSourceCount / strBinOffsets.length) * 100).toFixed(1) + "%";
+  });
+
   // Print table
   console.log(`\nString deserialization benchmark`);
   console.log(`${BENCH_TIME_MS / 1000}s per fixture per version, minimum of best rounds\n`);
@@ -143,6 +155,8 @@ async function main() {
   const nameColWidth = Math.max("File".length, ...fixtureNames.map((n) => n.length));
   const nonAsciiHeader = "ASCII";
   const nonAsciiColWidth = Math.max(nonAsciiHeader.length, ...nonAsciiPcts.map((s) => s.length));
+  const nonSourceHeader = "non-src";
+  const nonSourceColWidth = Math.max(nonSourceHeader.length, ...nonSourcePcts.map((s) => s.length));
   const colWidths = versionNames.map((name, col) => {
     const maxVal = Math.max(...formatted.map((row) => row[col].length));
     return Math.max(name.length, maxVal);
@@ -156,6 +170,7 @@ async function main() {
   const headerParts = [
     "File".padEnd(nameColWidth),
     nonAsciiHeader.padStart(nonAsciiColWidth),
+    nonSourceHeader.padStart(nonSourceColWidth),
     ...versionNames.map((name, c) => name.padStart(colWidths[c])),
     fastestHeader.padEnd(fastestColWidth),
   ];
@@ -165,6 +180,7 @@ async function main() {
   const sepParts = [
     "-".repeat(nameColWidth),
     "-".repeat(nonAsciiColWidth),
+    "-".repeat(nonSourceColWidth),
     ...colWidths.map((w) => "-".repeat(w)),
     "-".repeat(fastestColWidth),
   ];
@@ -175,6 +191,7 @@ async function main() {
     const rowParts = [
       fixtureNames[r].padEnd(nameColWidth),
       nonAsciiPcts[r].padStart(nonAsciiColWidth),
+      nonSourcePcts[r].padStart(nonSourceColWidth),
       ...colWidths.map((w, c) => formatted[r][c].padStart(w)),
       fastestNames[r].padEnd(fastestNameWidth) +
         (fastestPcts[r] ? " " + fastestPcts[r] : "").padEnd(fastestColWidth - fastestNameWidth),
