@@ -30,7 +30,42 @@ const WARMUP_ROUNDS = 5;
 async function main() {
   // Load versions and fixtures
   const versions = await loadAllVersions(BASELINE, SKIP);
-  const fixtures = loadAllFixtures();
+
+  // Compute per-fixture stats for sorting and display
+  // oxlint-disable-next-line oxc/no-map-spread
+  const fixtures = loadAllFixtures().map((fixture) => {
+    const { uint8, sourceEndPos, strBinOffsets } = fixture;
+
+    // Position of first non-ASCII byte as % of source length
+    let firstNonAsciiPos = sourceEndPos;
+    for (let i = 0; i < sourceEndPos; i++) {
+      if (uint8[i] >= 128) {
+        firstNonAsciiPos = i;
+        break;
+      }
+    }
+    const asciiPct = (firstNonAsciiPos / sourceEndPos) * 100;
+
+    // % of strings whose pos is outside the source region
+    const uint32 = new Uint32Array(uint8.buffer, uint8.byteOffset, uint8.byteLength >> 2);
+    let nonSourceCount = 0;
+    for (const offset of strBinOffsets) {
+      if (uint32[offset >> 2] >= sourceEndPos) nonSourceCount++;
+    }
+    const nonSourcePct =
+      strBinOffsets.length > 0 ? (nonSourceCount / strBinOffsets.length) * 100 : 0;
+
+    return { ...fixture, asciiPct, nonSourcePct };
+  });
+
+  // Sort: ASCII % descending, then non-src % ascending, then name alphabetical
+  fixtures.sort((fixture1, fixture2) => {
+    if (fixture1.asciiPct !== fixture2.asciiPct) return fixture2.asciiPct - fixture1.asciiPct;
+    if (fixture1.nonSourcePct !== fixture2.nonSourcePct) {
+      return fixture1.nonSourcePct - fixture2.nonSourcePct;
+    }
+    return fixture1.name < fixture2.name ? -1 : 1;
+  });
 
   // Benchmark all versions against all fixtures.
   // Collect results first, then format the table with tight column widths.
@@ -128,31 +163,11 @@ async function main() {
     }
   }
 
-  // Non-ASCII position as percentage of source length.
-  // 100% means file is entirely ASCII, lower values mean non-ASCII bytes appear earlier.
-  const nonAsciiPcts = fixtures.map((fixture) => {
-    const { uint8, sourceEndPos } = fixture;
-    let firstNonAsciiPos = sourceEndPos;
-    for (let i = 0; i < sourceEndPos; i++) {
-      if (uint8[i] >= 128) {
-        firstNonAsciiPos = i;
-        break;
-      }
-    }
-    return ((firstNonAsciiPos / sourceEndPos) * 100).toFixed(1) + "%";
-  });
-
-  // Percentage of strings whose pos is outside the source region
-  const nonSourcePcts = fixtures.map((fixture) => {
-    const { uint8, sourceEndPos, strBinOffsets } = fixture;
-    const uint32 = new Uint32Array(uint8.buffer, uint8.byteOffset, uint8.byteLength >> 2);
-    let nonSourceCount = 0;
-    for (const offset of strBinOffsets) {
-      if (uint32[offset >> 2] >= sourceEndPos) nonSourceCount++;
-    }
-    if (nonSourceCount === 0) return "-";
-    return ((nonSourceCount / strBinOffsets.length) * 100).toFixed(2) + "%";
-  });
+  // Format precomputed stats for display
+  const nonAsciiPcts = fixtures.map((fixture) => fixture.asciiPct.toFixed(1) + "%");
+  const nonSourcePcts = fixtures.map((fixture) =>
+    fixture.nonSourcePct === 0 ? "-" : fixture.nonSourcePct.toFixed(2) + "%",
+  );
 
   // Print table
   console.log();
