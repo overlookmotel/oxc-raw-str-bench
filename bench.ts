@@ -55,7 +55,7 @@ async function main() {
     const nonSourcePct =
       strBinOffsets.length > 0 ? (nonSourceCount / strBinOffsets.length) * 100 : 0;
 
-    return { ...fixture, asciiPct, nonSourcePct };
+    return { ...fixture, stringsCount: strBinOffsets.length, asciiPct, nonSourcePct };
   });
 
   // Sort: ASCII % descending, then non-src % ascending, then name alphabetical
@@ -148,6 +148,22 @@ async function main() {
     rawTimes.push(row);
   }
 
+  // Append average row
+  const numFixtures = fixtures.length;
+  rawTimes.push(
+    versions.map(
+      (_version, colIndex) => rawTimes.reduce((sum, row) => sum + row[colIndex], 0) / numFixtures,
+    ),
+  );
+  fixtures.push({
+    name: "Average",
+    stringsCount: Math.round(
+      fixtures.reduce((sum, fixture) => sum + fixture.stringsCount, 0) / numFixtures,
+    ),
+    asciiPct: fixtures.reduce((sum, fixture) => sum + fixture.asciiPct, 0) / numFixtures,
+    nonSourcePct: fixtures.reduce((sum, fixture) => sum + fixture.nonSourcePct, 0) / numFixtures,
+  } as (typeof fixtures)[0]);
+
   // Format % difference vs baseline, with sign padded to 2 digits
   function formatPctDiff(pct: number): string {
     const sign = pct <= 0 ? "-" : "+";
@@ -209,7 +225,7 @@ async function main() {
     {
       header: "strings",
       align: "right",
-      values: fixtures.map((fixture) => String(fixture.strBinOffsets.length)),
+      values: fixtures.map((fixture) => String(fixture.stringsCount)),
     },
     {
       header: "ASCII",
@@ -257,9 +273,12 @@ async function main() {
         .join(" | ") +
       " |",
   );
-  for (let rowIndex = 0; rowIndex < fixtureNames.length; rowIndex++) {
+  const averageFixtureIndex = fixtureNames.length - 1;
+  for (let rowIndex = 0; rowIndex < averageFixtureIndex; rowIndex++) {
     console.log(formatRow(columns.map((col) => col.values[rowIndex])));
   }
+  console.log("| " + colWidths.map((width) => "-".repeat(width)).join(" | ") + " |");
+  console.log(formatRow(columns.map((col) => col.values[averageFixtureIndex])));
 }
 
 await main();
