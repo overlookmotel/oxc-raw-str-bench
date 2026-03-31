@@ -185,6 +185,7 @@ async function main() {
   }
 
   // Format precomputed stats for display
+  const strCounts = fixtures.map((fixture) => String(fixture.strBinOffsets.length));
   const nonAsciiPcts = fixtures.map((fixture) => fixture.asciiPct.toFixed(1) + "%");
   const nonSourcePcts = fixtures.map((fixture) =>
     fixture.nonSourcePct === 0 ? "-" : fixture.nonSourcePct.toFixed(2) + "%",
@@ -196,6 +197,7 @@ async function main() {
   console.log("--------------------------------\n");
   console.log(`${BENCH_TIME_MS}ms per fixture per version, minimum of best rounds.\n`);
   console.log("* Timings are in nanoseconds per string.");
+  console.log("* strings column is number of strings in the fixture.");
   console.log("* ASCII column is % of source length which is before first non-ASCII byte.");
   console.log('  "100%" for files which are 100% ASCII.');
   console.log("* non-src column is % of strings which are outside the source region.");
@@ -203,6 +205,11 @@ async function main() {
 
   // Compute minimum column widths
   const nameColWidth = Math.max("File".length, ...fixtureNames.map((name) => name.length));
+  const strCountHeader = "strings";
+  const strCountColWidth = Math.max(
+    strCountHeader.length,
+    ...strCounts.map((count) => count.length),
+  );
   const nonAsciiHeader = "ASCII";
   const nonAsciiColWidth = Math.max(
     nonAsciiHeader.length,
@@ -233,6 +240,7 @@ async function main() {
   console.log(
     markdownRow([
       "File".padEnd(nameColWidth),
+      strCountHeader.padStart(strCountColWidth),
       nonAsciiHeader.padStart(nonAsciiColWidth),
       nonSourceHeader.padStart(nonSourceColWidth),
       ...versionNames.map((name, colIndex) => name.padStart(colWidths[colIndex])),
@@ -244,6 +252,7 @@ async function main() {
   console.log(
     markdownRow([
       "-".repeat(nameColWidth),
+      "-".repeat(strCountColWidth - 1) + ":",
       "-".repeat(nonAsciiColWidth - 1) + ":",
       "-".repeat(nonSourceColWidth - 1) + ":",
       ...colWidths.map((width) => "-".repeat(width - 1) + ":"),
@@ -256,6 +265,7 @@ async function main() {
     console.log(
       markdownRow([
         fixtureNames[rowIndex].padEnd(nameColWidth),
+        strCounts[rowIndex].padStart(strCountColWidth),
         nonAsciiPcts[rowIndex].padStart(nonAsciiColWidth),
         nonSourcePcts[rowIndex].padStart(nonSourceColWidth),
         ...colWidths.map((width, colIndex) => formatted[rowIndex][colIndex].padStart(width)),
