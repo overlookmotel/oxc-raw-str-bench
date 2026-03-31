@@ -10,7 +10,6 @@ export interface Fixture {
   // Combined buffer: [sourceBytes | strDataBytes | padding | strBin]
   uint8: Uint8Array;
   sourceText: string;
-  sourceIsAscii: boolean;
   sourceEndPos: number;
   // Byte offsets into `uint8` for each string's descriptor (pos, 0, len, 0)
   strBinOffsets: number[];
@@ -67,7 +66,6 @@ function loadFixture(name: string): Fixture {
 
   const sourceEndPos = sourceBytes.length;
   const sourceText = decodeStr(sourceBytes);
-  const sourceIsAscii = sourceText.length === sourceEndPos;
 
   // Each strBin entry is 16 bytes (4 x uint32)
   const numStrings = strBinBytes.length / 16;
@@ -81,7 +79,6 @@ function loadFixture(name: string): Fixture {
     dirPath,
     uint8,
     sourceText,
-    sourceIsAscii,
     sourceEndPos,
     strBinOffsets,
   };
