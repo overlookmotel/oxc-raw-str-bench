@@ -17,8 +17,8 @@ import { loadAllFixtures, loadAllVersions } from "./common.ts";
 // Version used as baseline for comparison
 const BASELINE = "current";
 
-// Versions to skip
-const SKIP: string[] = [];
+// Versions to benchmark. `null` for all versions.
+const FILTER: string[] | null = null;
 
 // Total time budget per fixture, per version
 const BENCH_TIME_MS = 100;
@@ -29,7 +29,7 @@ const WARMUP_ROUNDS = 5;
 
 async function main() {
   // Load versions and fixtures
-  const versions = await loadAllVersions(BASELINE, SKIP);
+  const versions = await loadAllVersions(BASELINE, FILTER);
 
   // Compute per-fixture stats for sorting and display
   // oxlint-disable-next-line oxc/no-map-spread

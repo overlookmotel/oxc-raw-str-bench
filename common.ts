@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import { join as pathJoin } from "node:path";
 import { pathToFileURL } from "node:url";
+import assert from "node:assert";
 
 export interface Fixture {
   name: string;
@@ -117,20 +118,28 @@ export function injectState(buffer, sourceTextInput, sourceByteLen) {
  * then imports and returns them.
  *
  * @param baseline - Name of the version to put first. Remaining versions are sorted alphabetically.
- * @param skip - Names of versions to skip.
+ * @param filter - Names of versions to use (optional). Must include `baseline` if provided.
  * @returns - Array of versions, sorted by name with baseline first.
  */
-export async function loadAllVersions(baseline: string, skip: string[] = []): Promise<Version[]> {
+export async function loadAllVersions(
+  baseline: string,
+  filter?: string[] | null,
+): Promise<Version[]> {
   fs.mkdirSync(COMPILED_DIR, { recursive: true });
 
-  const skipSet = new Set(skip);
+  let filterSet: Set<string> | null = null;
+  if (filter != null) {
+    filterSet = new Set(filter);
+    assert(filterSet.has(baseline), "`filter` must include `baseline` if `filter` is set");
+  }
+
   const filenames = fs.readdirSync(VERSIONS_DIR);
 
   const versions: Version[] = [];
   for (const filename of filenames) {
     if (!filename.endsWith(".mjs")) continue;
     const name = filename.slice(0, -4);
-    if (skipSet.has(name)) continue;
+    if (filterSet !== null && !filterSet.has(name)) continue;
 
     const source = fs.readFileSync(pathJoin(VERSIONS_DIR, filename), "utf8");
     const compiledPath = pathJoin(COMPILED_DIR, filename);

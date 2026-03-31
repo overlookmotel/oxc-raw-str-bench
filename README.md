@@ -60,7 +60,7 @@ See `versions/current.mjs` for the baseline implementation.
 
 While working on different versions, you can alter which versions are benchmarked by:
 
-- Skip some versions: Add them to `SKIP` in `bench.ts`.
+- Benchmark only some versions: Add them to `FILTER` in `bench.ts`.
 - Change the baseline version: Alter `BASELINE` in `bench.ts`.
 
 ## Files
