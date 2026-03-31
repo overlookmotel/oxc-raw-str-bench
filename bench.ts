@@ -190,6 +190,7 @@ async function main() {
   console.log("--------------------------------\n");
   console.log(`${BENCH_TIME_MS}ms per fixture per version, minimum of best rounds.\n`);
   console.log("* Timings are in nanoseconds per string.");
+  console.log("* % changes are vs the baseline (1st column).");
   console.log("* strings column is number of strings in the fixture.");
   console.log("* ASCII column is % of source length which is before first non-ASCII byte.");
   console.log('  "100%" for files which are 100% ASCII.');
