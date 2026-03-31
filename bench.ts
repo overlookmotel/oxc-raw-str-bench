@@ -22,6 +22,9 @@ const FILTER: string[] | null = null;
 
 // Total time budget per fixture, per version
 const BENCH_TIME_MS = 100;
+// Target time per timed round (ms). Higher = less `performance.now()` overhead,
+// lower = more rounds within the time budget (more chances to find the true minimum).
+const TARGET_ROUND_MS = 10;
 // Minimum number of timed rounds
 const MIN_ROUNDS = 5;
 // Number of warmup rounds
@@ -118,9 +121,12 @@ async function main() {
       }
       const avgCycleTime = warmupTotal / WARMUP_ROUNDS;
 
-      // Choose how many cycles per timed round so each round takes ~50ms.
+      // Choose how many cycles per timed round so each round takes ~10ms.
       // This ensures `performance.now()` overhead is negligible.
-      const cyclesPerRound = Math.max(1, Math.round(50 / Math.max(avgCycleTime, 0.001)));
+      const cyclesPerRound = Math.max(
+        1,
+        Math.round(TARGET_ROUND_MS / Math.max(avgCycleTime, 0.001)),
+      );
 
       // Timed rounds - use minimum as the result.
       // The fastest run best represents the code's true speed.
