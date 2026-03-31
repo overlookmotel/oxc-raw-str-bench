@@ -184,13 +184,6 @@ async function main() {
     }
   }
 
-  // Format precomputed stats for display
-  const strCounts = fixtures.map((fixture) => String(fixture.strBinOffsets.length));
-  const nonAsciiPcts = fixtures.map((fixture) => fixture.asciiPct.toFixed(1) + "%");
-  const nonSourcePcts = fixtures.map((fixture) =>
-    fixture.nonSourcePct === 0 ? "-" : fixture.nonSourcePct.toFixed(2) + "%",
-  );
-
   // Print table
   console.log();
   console.log("String deserialization benchmark");
@@ -203,78 +196,72 @@ async function main() {
   console.log("* non-src column is % of strings which are outside the source region.");
   console.log('  "-" for files where all strings are in the source region.\n');
 
-  // Compute minimum column widths
-  const nameColWidth = Math.max("File".length, ...fixtureNames.map((name) => name.length));
-  const strCountHeader = "strings";
-  const strCountColWidth = Math.max(
-    strCountHeader.length,
-    ...strCounts.map((count) => count.length),
-  );
-  const nonAsciiHeader = "ASCII";
-  const nonAsciiColWidth = Math.max(
-    nonAsciiHeader.length,
-    ...nonAsciiPcts.map((pct) => pct.length),
-  );
-  const nonSourceHeader = "non-src";
-  const nonSourceColWidth = Math.max(
-    nonSourceHeader.length,
-    ...nonSourcePcts.map((pct) => pct.length),
-  );
-  const colWidths = versionNames.map((name, colIndex) => {
-    const maxVal = Math.max(...formatted.map((row) => row[colIndex].length));
-    return Math.max(name.length, maxVal);
-  });
-  const fastestHeader = "fastest";
-  const fastestNameWidth = Math.max(
-    fastestHeader.length,
-    ...fastestNames.map((name) => name.length),
-  );
-  const fastestPctWidth = Math.max(...fastestPcts.map((pct) => pct.length));
-  const fastestColWidth = fastestNameWidth + (fastestPctWidth > 0 ? 1 + fastestPctWidth : 0);
-
-  function markdownRow(parts: string[]): string {
-    return `| ${parts.join(" | ")} |`;
+  // Define table columns: header, alignment, and values per row
+  interface Column {
+    header: string;
+    align: "left" | "right";
+    values: string[];
   }
 
-  // Header
-  console.log(
-    markdownRow([
-      "File".padEnd(nameColWidth),
-      strCountHeader.padStart(strCountColWidth),
-      nonAsciiHeader.padStart(nonAsciiColWidth),
-      nonSourceHeader.padStart(nonSourceColWidth),
-      ...versionNames.map((name, colIndex) => name.padStart(colWidths[colIndex])),
-      fastestHeader.padEnd(fastestColWidth),
-    ]),
+  // "Fastest" column combines name + pct
+  const fastestValues = fastestNames.map((name, rowIndex) =>
+    fastestPcts[rowIndex] ? `${name} ${fastestPcts[rowIndex]}` : name,
   );
 
-  // Separator
-  console.log(
-    markdownRow([
-      "-".repeat(nameColWidth),
-      "-".repeat(strCountColWidth - 1) + ":",
-      "-".repeat(nonAsciiColWidth - 1) + ":",
-      "-".repeat(nonSourceColWidth - 1) + ":",
-      ...colWidths.map((width) => "-".repeat(width - 1) + ":"),
-      "-".repeat(fastestColWidth),
-    ]),
+  const columns: Column[] = [
+    { header: "File", align: "left", values: fixtureNames },
+    {
+      header: "strings",
+      align: "right",
+      values: fixtures.map((fixture) => String(fixture.strBinOffsets.length)),
+    },
+    {
+      header: "ASCII",
+      align: "right",
+      values: fixtures.map((fixture) => fixture.asciiPct.toFixed(1) + "%"),
+    },
+    {
+      header: "non-src",
+      align: "right",
+      values: fixtures.map((fixture) =>
+        fixture.nonSourcePct === 0 ? "-" : fixture.nonSourcePct.toFixed(2) + "%",
+      ),
+    },
+    // One column per version
+    ...versionNames.map((name, colIndex) => ({
+      header: name,
+      align: "right" as const,
+      values: formatted.map((row) => row[colIndex]),
+    })),
+    { header: "fastest", align: "left", values: fastestValues },
+  ];
+
+  // Compute column widths and format table
+  const colWidths = columns.map((col) =>
+    Math.max(col.header.length, ...col.values.map((value) => value.length)),
   );
 
-  // Rows
+  function formatRow(cells: string[]): string {
+    const padded = cells.map((cell, colIndex) => {
+      const width = colWidths[colIndex];
+      return columns[colIndex].align === "right" ? cell.padStart(width) : cell.padEnd(width);
+    });
+    return `| ${padded.join(" | ")} |`;
+  }
+
+  console.log(formatRow(columns.map((col) => col.header)));
+  console.log(
+    "| " +
+      columns
+        .map((col, colIndex) => {
+          const width = colWidths[colIndex];
+          return col.align === "right" ? "-".repeat(width - 1) + ":" : "-".repeat(width);
+        })
+        .join(" | ") +
+      " |",
+  );
   for (let rowIndex = 0; rowIndex < fixtureNames.length; rowIndex++) {
-    console.log(
-      markdownRow([
-        fixtureNames[rowIndex].padEnd(nameColWidth),
-        strCounts[rowIndex].padStart(strCountColWidth),
-        nonAsciiPcts[rowIndex].padStart(nonAsciiColWidth),
-        nonSourcePcts[rowIndex].padStart(nonSourceColWidth),
-        ...colWidths.map((width, colIndex) => formatted[rowIndex][colIndex].padStart(width)),
-        fastestNames[rowIndex].padEnd(fastestNameWidth) +
-          (fastestPcts[rowIndex] ? " " + fastestPcts[rowIndex] : "").padEnd(
-            fastestColWidth - fastestNameWidth,
-          ),
-      ]),
-    );
+    console.log(formatRow(columns.map((col) => col.values[rowIndex])));
   }
 }
 
