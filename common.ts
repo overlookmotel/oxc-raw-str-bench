@@ -18,6 +18,7 @@ export interface Fixture {
 
 export interface Version {
   name: string;
+  id: number;
   injectState(buffer: Uint8Array, sourceText: string, sourceByteLen: number): void;
   deserializeStr(this: void, pos: number): string;
 }
@@ -120,7 +121,7 @@ export function injectState(buffer, sourceTextInput, sourceByteLen) {
  * @param baseline - Name of the version to put first. Remaining versions are sorted alphabetically.
  * @param filter - Names of versions to use (optional).
  *   If provided, returned array of versions is sorted in this order. `baseline` is ignored.
- * @returns - Array of versions, sorted by name with baseline first, or in order of `filter` if provided.
+ * @returns - Array of versions, sorted by ID with baseline first, or in order of `filter` if provided.
  */
 export async function loadAllVersions(
   baseline: string,
@@ -135,8 +136,12 @@ export async function loadAllVersions(
 
   const versions: Version[] = [];
   for (const filename of filenames) {
-    if (!filename.endsWith(".mjs")) continue;
-    const name = filename.slice(0, -4);
+    const match = filename.match(/^(\d+)\s+(.+)\.mjs$/);
+    if (!match) continue;
+
+    const id = parseInt(match[1], 10);
+    const name = match[2];
+
     if (filterSet !== null && !filterSet.has(name)) continue;
 
     const source = fs.readFileSync(pathJoin(VERSIONS_DIR, filename), "utf8");
@@ -146,7 +151,7 @@ export async function loadAllVersions(
     const url = pathToFileURL(compiledPath).href;
     // oxlint-disable-next-line no-await-in-loop
     const mod = await import(url);
-    versions.push({ name, injectState: mod.injectState, deserializeStr: mod.deserializeStr });
+    versions.push({ name, id, injectState: mod.injectState, deserializeStr: mod.deserializeStr });
   }
 
   if (filter != null) {
@@ -159,7 +164,7 @@ export async function loadAllVersions(
     versions.sort((version1, version2) => {
       if (version1.name === baseline) return -1;
       if (version2.name === baseline) return 1;
-      return version1.name < version2.name ? -1 : 1;
+      return version1.id - version2.id;
     });
   }
 
