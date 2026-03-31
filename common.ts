@@ -145,7 +145,7 @@ export async function loadAllVersions(baseline: string, skip: string[] = []): Pr
   versions.sort((version1, version2) => {
     if (version1.name === baseline) return -1;
     if (version2.name === baseline) return 1;
-    return version1.name.localeCompare(version2.name);
+    return version1.name < version2.name ? -1 : 1;
   });
 
   return versions;
