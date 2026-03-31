@@ -37,14 +37,14 @@ in the `versions` directory. The file should export two functions:
 The bench script wraps each version file with boilerplate that provides the following
 variables and functions, available as globals within the version file:
 
-| Variable / function | Type | Description |
-|---|---|---|
-| `uint8` | `Uint8Array` | The combined buffer (source + strData + strBin) |
-| `uint32` | `Uint32Array` | `Uint32Array` view over `uint8`'s backing buffer |
-| `float64` | `Float64Array` | `Float64Array` view over `uint8`'s backing buffer |
-| `sourceText` | `string` | The source text as a JS string |
-| `sourceIsAscii` | `boolean` | `true` if source is pure ASCII |
-| `sourceEndPos` | `number` | Byte length of source text (end of source region in buffer) |
+| Variable / function | Type           | Description                                                 |
+| ------------------- | -------------- | ----------------------------------------------------------- |
+| `uint8`             | `Uint8Array`   | The combined buffer (source + strData + strBin)             |
+| `uint32`            | `Uint32Array`  | `Uint32Array` view over `uint8`'s backing buffer            |
+| `float64`           | `Float64Array` | `Float64Array` view over `uint8`'s backing buffer           |
+| `sourceText`        | `string`       | The source text as a JS string                              |
+| `sourceIsAscii`     | `boolean`      | `true` if source is pure ASCII                              |
+| `sourceEndPos`      | `number`       | Byte length of source text (end of source region in buffer) |
 
 `deserializeStr(pos)` receives a byte offset into the buffer. The string descriptor
 at that offset contains two `uint32` values the function needs to read:

@@ -2,9 +2,12 @@
   "name": "oxc-raw-str-bench",
   "version": "0.0.0",
   "description": "Benchmarking Oxc raw transfer string deserialization",
-  "type": "module",
   "license": "MIT",
-  "packageManager": "pnpm@10.30.2",
+  "type": "module",
+  "scripts": {
+    "lint": "oxlint",
+    "fmt": "oxfmt"
+  },
   "devDependencies": {
     "@types/node": "^25.5.0",
     "oxc-parser": "^0.121.0",
@@ -12,8 +15,5 @@
     "oxlint": "^1.57.0",
     "oxlint-tsgolint": "^0.18.1"
   },
-  "scripts": {
-    "lint": "oxlint",
-    "fmt": "oxfmt"
-  }
+  "packageManager": "pnpm@10.30.2"
 }
