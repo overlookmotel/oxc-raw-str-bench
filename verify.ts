@@ -27,6 +27,7 @@ const versions = await loadAllVersions(BASELINE);
 // Include oxc-parser's original `deserializeStr` as a reference version
 versions.unshift({
   name: "original",
+  id: 0,
   injectState: injectStateOriginal,
   deserializeStr: deserializeStrOriginal,
 });
