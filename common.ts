@@ -23,6 +23,20 @@ export interface Version {
   deserializeStr(this: void, pos: number): string;
 }
 
+interface DeserializerModule {
+  deserializeStrOriginal(this: void, pos: number): string;
+  injectState(this: void, buffer: Uint8Array, sourceText: string, sourceByteLen: number): void;
+  getInstrData(this: void): {
+    calls: { pos: number; len: number; str: string }[];
+    sourceEndPos: number;
+  };
+}
+
+// `true` to use local copy of `oxc-parser`, `false` to use `oxc-parser` from `node_modules`
+const USE_LOCAL_OXC_PARSER = false;
+// Relative path to local copy of `oxc-parser`
+const LOCAL_OXC_PARSER_PATH = "../../crates/oxc/napi/parser";
+
 // Number of bytes of zero padding after strings data in buffer
 const PADDING_AFTER_STRINGS = 64;
 
@@ -33,6 +47,32 @@ const COMPILED_DIR = pathJoin(ROOT_DIR_PATH, "versions-compiled");
 
 const textDecoder = new TextDecoder("utf-8", { ignoreBOM: true });
 export const decodeStr = textDecoder.decode.bind(textDecoder);
+
+const PARSER_PKG_DIR_PATH = USE_LOCAL_OXC_PARSER
+  ? pathJoin(ROOT_DIR_PATH, LOCAL_OXC_PARSER_PATH)
+  : pathJoin(ROOT_DIR_PATH, "node_modules/oxc-parser");
+
+const PARSER_PATH = pathJoin(PARSER_PKG_DIR_PATH, "src-js/index.js");
+export const DESERIALIZER_PATH = pathJoin(
+  PARSER_PKG_DIR_PATH,
+  "src-js/generated/deserialize/ts.js",
+);
+
+/**
+ * Import `oxc-parser` (or local copy if `USE_LOCAL_OXC_PARSER === true`).
+ * @returns `oxc-parser` module.
+ */
+export function importParser(): Promise<typeof import("oxc-parser")> {
+  return import(pathToFileURL(PARSER_PATH).href);
+}
+
+/**
+ * Import deserializer module from `oxc-parser` (or local copy if `USE_LOCAL_OXC_PARSER === true`).
+ * @returns `deserialize/ts.js` module.
+ */
+export function importDeserializer(): Promise<DeserializerModule> {
+  return import(pathToFileURL(DESERIALIZER_PATH).href);
+}
 
 /**
  * Load all fixtures from the fixtures directory.

@@ -17,19 +17,20 @@
 import assert from "node:assert";
 import fs from "node:fs";
 import { basename, join as pathJoin } from "path";
-import { ROOT_DIR_PATH, FIXTURES_DIR_PATH } from "./common.ts";
-
-const DESERIALIZER_PATH = pathJoin(
+import {
+  importParser,
+  importDeserializer,
   ROOT_DIR_PATH,
-  "node_modules/oxc-parser/src-js/generated/deserialize/ts.js",
-);
+  FIXTURES_DIR_PATH,
+  DESERIALIZER_PATH,
+} from "./common.ts";
 
 async function main(): Promise<void> {
   patchDeserializer();
 
   // Dynamic import after patching, so Node loads the patched version
-  const { parseSync } = await import("oxc-parser");
-  const { getInstrData } = await import("oxc-parser/src-js/generated/deserialize/ts.js");
+  const { parseSync } = await importParser();
+  const { getInstrData } = await importDeserializer();
 
   const urls: string[] = JSON.parse(fs.readFileSync(pathJoin(ROOT_DIR_PATH, "urls.json"), "utf8"));
 

@@ -14,13 +14,11 @@
 
 import fs from "node:fs";
 import { join as pathJoin } from "node:path";
-import { loadAllFixtures, loadAllVersions } from "./common.ts";
-import {
-  injectState as injectStateOriginal,
-  deserializeStrOriginal,
-} from "oxc-parser/src-js/generated/deserialize/ts.js";
+import { importDeserializer, loadAllFixtures, loadAllVersions } from "./common.ts";
 
 const BASELINE = "current";
+
+const { injectState: injectStateOriginal, deserializeStrOriginal } = await importDeserializer();
 
 const versions = await loadAllVersions(BASELINE);
 
