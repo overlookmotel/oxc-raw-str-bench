@@ -33,7 +33,7 @@ interface DeserializerModule {
 }
 
 // `true` to use local copy of `oxc-parser`, `false` to use `oxc-parser` from `node_modules`
-const USE_LOCAL_OXC_PARSER = false;
+const USE_LOCAL_OXC_PARSER = true;
 // Relative path to local copy of `oxc-parser`
 const LOCAL_OXC_PARSER_PATH = "../../crates/oxc/napi/parser";
 
