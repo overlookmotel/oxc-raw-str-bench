@@ -42,6 +42,8 @@ pnpm run bench
 - `latin-source64` - `latin64` with strings outside source text region using `fromCharCode.apply`
 - `latin-slice64` - `latin-source64` but using `Buffer.prototype.latin1Slice` instead of `TextDecoder("latin1")`
 - `latin-slice-onebyte64` - `latin-slice64` with fast path slicing from `sourceTextLatin` instead of `sourceText`
+- `utf8-slice64` - `latin-slice-onebyte64`, but also using `Buffer.prototype.utf8Slice` instead of `TextDecoder`
+  for decoding UTF-8.
 - `latin64` - `latin` with the crossover point to `TextDecoder` at 64 bytes
 - `latin-4-chunk64` - `latin64` with bytes checked for ASCII in blocks of 4 bytes
 - `latin-8-chunk64` - `latin64` with bytes checked for ASCII in blocks of 8 bytes
