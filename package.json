@@ -8,6 +8,7 @@
     "construct": "node construct.ts",
     "verify": "node verify.ts",
     "bench": "node bench.ts",
+    "asm": "./asm.sh",
     "lint": "oxlint",
     "fmt": "oxfmt"
   },

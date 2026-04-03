@@ -232,6 +232,16 @@ While working on different versions, you can alter which versions are benchmarke
 - Benchmark only some versions: Add them to `FILTER` in `bench.ts`.
 - Change the baseline version: Alter `BASELINE` in `bench.ts`.
 
+## Inspecting assembly for versions
+
+To get the assembly that TurboFan produces for a version:
+
+```bash
+pnpm asm <version-name> > dump.txt
+```
+
+The output is verbose, but Claude Code seems to be good at analyzing it. Presumably other AIs will be too.
+
 ## Files
 
 - `construct.ts` - Downloads source files, patches `oxc-parser`'s deserializer for instrumentation,
