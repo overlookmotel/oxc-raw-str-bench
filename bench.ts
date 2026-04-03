@@ -21,7 +21,7 @@ const BASELINE = "current";
 const FILTER: string[] | null = null;
 
 // Total time budget per fixture, per version
-const BENCH_TIME_MS = 100;
+const BENCH_TIME_MS = 1000;
 // Target time per timed round (ms). Higher = less `performance.now()` overhead,
 // lower = more rounds within the time budget (more chances to find the true minimum).
 const TARGET_ROUND_MS = 10;
