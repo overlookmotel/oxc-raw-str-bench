@@ -18,7 +18,13 @@ import { loadAllFixtures, loadAllVersions } from "./common.ts";
 const BASELINE = "current";
 
 // Versions to benchmark. `null` for all versions.
-const FILTER: string[] | null = ["current-linter"];
+const FILTER: string[] | null = [
+  "current-linter",
+  "simpler-branch-linter",
+  "simpler-branch-linter2",
+  "simpler-branch-linter3",
+  "simpler-branch-linter4",
+];
 
 // Total time budget per fixture, per version
 const BENCH_TIME_MS = 1000;

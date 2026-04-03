@@ -1,6 +1,7 @@
 /**
- * Current implementation:
- * - Concat loop for short strings, `TextDecoder` for len > 50.
+ * `current-linter` with the following changes:
+ *
+ * - Simplified branch condition for "can we use `sourceText.substr`?" - 1 less subtraction.
  */
 
 // oxlint-disable prefer-const
@@ -10,18 +11,16 @@ const textDecoder = new TextDecoder("utf-8", { ignoreBOM: true }),
 
 const { fromCharCode } = String;
 
-let firstNonAsciiOffset = 0;
+let firstNonAsciiPos = 0;
 
 export function setup() {
   // Find first non-ASCII byte in source region
   if (!sourceIsAscii) {
-    firstNonAsciiOffset = sourceByteLen;
-    for (let i = sourceStartPos, e = sourceStartPos + sourceByteLen; i < e; i++) {
-      if (uint8[i] >= 128) {
-        firstNonAsciiOffset = i - sourceStartPos;
-        break;
-      }
+    let i = sourceStartPos;
+    for (; i < sourceEndPos; i++) {
+      if (uint8[i] >= 128) break;
     }
+    firstNonAsciiPos = i;
   }
 }
 
@@ -38,15 +37,12 @@ export function deserializeStr(pos) {
   // 1. Source is all ASCII, or
   // 2. String is before first non-ASCII byte in source
   // then use `sourceText.substr`
-  if (
-    pos >= sourceStartPos &&
-    (sourceIsAscii || pos - sourceStartPos + len <= firstNonAsciiOffset)
-  ) {
+  let end = pos + len;
+  if (pos >= sourceStartPos && (sourceIsAscii || end <= firstNonAsciiPos)) {
     return sourceText.substr(pos - sourceStartPos, len);
   }
 
   // If longer than 9 bytes, use `TextDecoder`
-  let end = pos + len;
   if (len > 9) return decodeStr(uint8.subarray(pos, end));
 
   // Concat bytes into string.

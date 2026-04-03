@@ -146,7 +146,7 @@ function loadFixture(name: string): Fixture {
 const BOILERPLATE_HEAD = `
 // oxlint-disable
 
-let uint8, uint32, float64, sourceText, sourceIsAscii, sourceStartPos, sourceByteLen, sourceEndPos;
+let uint8, uint32, float64, sourceText, sourceIsAscii, sourceStartPos = 0, sourceByteLen = 0, sourceEndPos = 0;
 
 export function injectState(buffer, sourceTextInput, sourceStartPosInput, sourceByteLenInput) {
   uint8 = buffer;

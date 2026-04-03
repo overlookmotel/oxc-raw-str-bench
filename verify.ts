@@ -18,7 +18,13 @@ import { /* importDeserializer, */ loadAllFixtures, loadAllVersions } from "./co
 
 const BASELINE = "current";
 
-const LINTER_VERSIONS = new Set(["current-linter"]);
+const LINTER_VERSIONS = new Set([
+  "current-linter",
+  "simpler-branch-linter",
+  "simpler-branch-linter2",
+  "simpler-branch-linter3",
+  "simpler-branch-linter4",
+]);
 
 // const { injectState: injectStateOriginal, deserializeStrOriginal } = await importDeserializer();
 
