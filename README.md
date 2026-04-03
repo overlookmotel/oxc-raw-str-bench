@@ -40,6 +40,8 @@ pnpm run bench
 - `latin` - `simpler-branch` with slice of Latin1-decoded string for ASCII strings
 - `latin30` - `latin` with the crossover point to `TextDecoder` at 30 bytes
 - `latin-source64` - `latin64` with strings outside source text region using `fromCharCode.apply`
+- `latin-slice64` - `latin-source64` but using `Buffer.prototype.latin1Slice` instead of `TextDecoder("latin1")`
+- `latin-slice-onebyte64` - `latin-slice64` with fast path slicing from `sourceTextLatin` instead of `sourceText`
 - `latin64` - `latin` with the crossover point to `TextDecoder` at 64 bytes
 - `latin-4-chunk64` - `latin64` with bytes checked for ASCII in blocks of 4 bytes
 - `latin-8-chunk64` - `latin64` with bytes checked for ASCII in blocks of 8 bytes
@@ -52,6 +54,13 @@ Notes:
 - `latin-source64` is a bit slower than `latin64`, but does not rely on all strings being clustered together in memory (which they are in this benchmark, but are not in Oxc at present).
 - `latin-4-chunk64`, `latin-8-chunk64`, and `latin-16-chunk64` are a large gain on many files, but unclear which is optimal. No outright winner across all fixtures.
 - `latin-*-chunk64` versions require padding bytes after string data to avoid regression on some small fixtures, due to "string is not all ASCII" false positives. We can ensure that in Oxc no problem.
+- `latin-slice64` is no faster for decoding than `latin-source64`, but initial decoding of the buffer to latin string
+  is likely much faster.
+- `latin-slice-onebyte64` is no faster than `latin-source64` or `latin-slice64`, but may have advantages in downstream
+  code which consumes the strings, as it will produce `ONE_BYTE` strings consistently for e.g. identifiers,
+  where slices of `sourceText` would produce a mix of `ONE_BYTE` and `TWO_BYTE` strings, depending on if source contains
+  non-ASCII bytes. The greater consistency may help V8 to optimize code that operates on strings
+  e.g. `ident.name === "React"`.
 
 ### Benchmark results
 
