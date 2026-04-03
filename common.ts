@@ -11,7 +11,8 @@ export interface Fixture {
   // Combined buffer: [sourceBytes | strDataBytes | padding | strBin]
   uint8: Uint8Array;
   sourceText: string;
-  sourceEndPos: number;
+  sourceStartPos: number;
+  sourceByteLen: number;
   // Byte offsets into `uint8` for each string's descriptor (pos, 0, len, 0)
   strBinOffsets: number[];
 }
@@ -19,7 +20,12 @@ export interface Fixture {
 export interface Version {
   name: string;
   id: number;
-  injectState(buffer: Uint8Array, sourceText: string, sourceByteLen: number): void;
+  injectState(
+    buffer: Uint8Array,
+    sourceText: string,
+    sourceStartPos: number,
+    sourceByteLen: number,
+  ): void;
   deserializeStr(this: void, pos: number): string;
 }
 
@@ -112,12 +118,11 @@ function loadFixture(name: string): Fixture {
   const totalLen = strBinStart + strBinBytes.length;
 
   const uint8 = new Uint8Array(totalLen);
-  uint8.set(sourceBytes, 0);
-  uint8.set(strDataBytes, sourceBytes.length);
+  uint8.set(strDataBytes, 0);
+  uint8.set(sourceBytes, strDataBytes.length);
   uint8.fill(0, stringDataLen, stringDataLen + PADDING_AFTER_STRINGS);
   uint8.set(strBinBytes, strBinStart);
 
-  const sourceEndPos = sourceBytes.length;
   const sourceText = decodeStr(sourceBytes);
 
   // Each strBin entry is 16 bytes (4 x uint32)
@@ -132,7 +137,8 @@ function loadFixture(name: string): Fixture {
     dirPath,
     uint8,
     sourceText,
-    sourceEndPos,
+    sourceStartPos: strDataBytes.length,
+    sourceByteLen: sourceBytes.length,
     strBinOffsets,
   };
 }
@@ -140,16 +146,18 @@ function loadFixture(name: string): Fixture {
 const BOILERPLATE_HEAD = `
 // oxlint-disable
 
-let uint8, uint32, float64, sourceText, sourceIsAscii, sourceEndPos;
+let uint8, uint32, float64, sourceText, sourceIsAscii, sourceStartPos, sourceByteLen, sourceEndPos;
 
-export function injectState(buffer, sourceTextInput, sourceByteLen) {
+export function injectState(buffer, sourceTextInput, sourceStartPosInput, sourceByteLenInput) {
   uint8 = buffer;
   uint32 = new Uint32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength >> 2);
   float64 = new Float64Array(buffer.buffer, buffer.byteOffset, buffer.byteLength >> 3);
 
   sourceText = sourceTextInput;
-  sourceIsAscii = sourceText.length === sourceByteLen;
-  sourceEndPos = sourceByteLen;
+  sourceIsAscii = sourceText.length === sourceByteLenInput;
+  sourceStartPos = sourceStartPosInput;
+  sourceByteLen = sourceByteLenInput;
+  sourceEndPos = sourceStartPos + sourceByteLen;
 
   setup();
 }

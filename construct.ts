@@ -76,7 +76,7 @@ async function main(): Promise<void> {
     parseSync(filename, code, { astType: "ts", experimentalRawTransfer: true } as any);
 
     console.log("Constructing fixture data...");
-    const { calls, sourceEndPos } = getInstrData();
+    const { calls, sourceEndPos: sourceByteLen } = getInstrData();
 
     // Separate source-region strings from other strings.
     // Sort a copy by data position to pack non-source strings in same order
@@ -85,14 +85,25 @@ async function main(): Promise<void> {
     callsCloned.sort((call1, call2) => call1.pos - call2.pos);
 
     let otherStrings = "",
-      otherStringsPos = sourceEndPos;
+      otherStringsPos = 0;
 
+    const insideSourceCalls = [];
     for (const call of callsCloned) {
-      if (call.pos >= sourceEndPos) {
+      if (call.pos >= sourceByteLen) {
+        // Outside source region
         call.pos = otherStringsPos;
         otherStringsPos += call.len;
         otherStrings += call.str;
+      } else {
+        // Inside source region
+        insideSourceCalls.push(call);
       }
+    }
+
+    const sourceStartPos = otherStringsPos;
+    for (const call of insideSourceCalls) {
+      // Inside source region
+      call.pos += sourceStartPos;
     }
 
     const strings = calls.map((call) => call.str);
@@ -113,8 +124,8 @@ async function main(): Promise<void> {
 
     console.log(
       `${calls.length} deserializeStr calls, ` +
-        `source ${(sourceEndPos / 1024).toFixed(1)} KB, ` +
-        `strData ${(otherStrings.length / 1024).toFixed(1)} KB\n`,
+        `source ${(sourceByteLen / 1024).toFixed(1)} KB, ` +
+        `strData ${(strDataPath.length / 1024).toFixed(1)} KB\n`,
     );
   }
 }

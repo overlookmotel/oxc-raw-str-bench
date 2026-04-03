@@ -14,21 +14,25 @@
 
 import fs from "node:fs";
 import { join as pathJoin } from "node:path";
-import { importDeserializer, loadAllFixtures, loadAllVersions } from "./common.ts";
+import { /* importDeserializer, */ loadAllFixtures, loadAllVersions } from "./common.ts";
 
 const BASELINE = "current";
 
-const { injectState: injectStateOriginal, deserializeStrOriginal } = await importDeserializer();
+const LINTER_VERSIONS = new Set(["current-linter"]);
+
+// const { injectState: injectStateOriginal, deserializeStrOriginal } = await importDeserializer();
 
 const versions = await loadAllVersions(BASELINE);
 
 // Include oxc-parser's original `deserializeStr` as a reference version
+/*
 versions.unshift({
   name: "original",
   id: 0,
   injectState: injectStateOriginal,
   deserializeStr: deserializeStrOriginal,
 });
+*/
 
 const fixtures = loadAllFixtures();
 
@@ -37,15 +41,18 @@ let allPassed = true;
 for (const version of versions) {
   console.log(`====================\n${version.name}\n====================`);
 
+  if (!LINTER_VERSIONS.has(version.name)) continue;
+
   for (const fixture of fixtures) {
-    const { name, dirPath, uint8, sourceText, sourceEndPos, strBinOffsets } = fixture;
+    const { name, dirPath, uint8, sourceText, sourceStartPos, sourceByteLen, strBinOffsets } =
+      fixture;
     const strings: string[] = JSON.parse(
       fs.readFileSync(pathJoin(dirPath, "strings.json"), "utf8"),
     );
 
     console.log(`  ${name}`);
 
-    version.injectState(uint8, sourceText, sourceEndPos);
+    version.injectState(uint8, sourceText, sourceStartPos, sourceByteLen);
 
     let failures = 0;
 

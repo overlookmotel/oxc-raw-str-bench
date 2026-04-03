@@ -18,7 +18,7 @@ import { loadAllFixtures, loadAllVersions } from "./common.ts";
 const BASELINE = "current";
 
 // Versions to benchmark. `null` for all versions.
-const FILTER: string[] | null = null;
+const FILTER: string[] | null = ["current-linter"];
 
 // Total time budget per fixture, per version
 const BENCH_TIME_MS = 1000;
@@ -37,23 +37,23 @@ async function main() {
   // Compute per-fixture stats for sorting and display
   // oxlint-disable-next-line oxc/no-map-spread
   const fixtures = loadAllFixtures().map((fixture) => {
-    const { uint8, sourceEndPos, strBinOffsets } = fixture;
+    const { uint8, sourceStartPos, sourceByteLen, strBinOffsets } = fixture;
 
     // Position of first non-ASCII byte as % of source length
-    let firstNonAsciiPos = sourceEndPos;
-    for (let i = 0; i < sourceEndPos; i++) {
-      if (uint8[i] >= 128) {
+    let firstNonAsciiPos = sourceByteLen;
+    for (let i = 0; i < sourceByteLen; i++) {
+      if (uint8[sourceStartPos + i] >= 128) {
         firstNonAsciiPos = i;
         break;
       }
     }
-    const asciiPct = (firstNonAsciiPos / sourceEndPos) * 100;
+    const asciiPct = (firstNonAsciiPos / sourceByteLen) * 100;
 
     // % of strings whose pos is outside the source region
     const uint32 = new Uint32Array(uint8.buffer, uint8.byteOffset, uint8.byteLength >> 2);
     let nonSourceCount = 0;
     for (const offset of strBinOffsets) {
-      if (uint32[offset >> 2] >= sourceEndPos) nonSourceCount++;
+      if (uint32[offset >> 2] < sourceStartPos) nonSourceCount++;
     }
     const nonSourcePct =
       strBinOffsets.length > 0 ? (nonSourceCount / strBinOffsets.length) * 100 : 0;
@@ -99,14 +99,14 @@ async function main() {
     const fixture = fixtures[fixtureIndex];
     console.log(`Benchmarking ${fixtureIndex + 1}/${fixtures.length} ${fixture.name}`);
 
-    const { uint8, sourceText, sourceEndPos, strBinOffsets } = fixture;
+    const { uint8, sourceText, sourceStartPos, sourceByteLen, strBinOffsets } = fixture;
     const row: number[] = [];
 
     for (let versionIndex = 0; versionIndex < versions.length; versionIndex++) {
       const version = versions[versionIndex];
       const runCalls = runners[versionIndex];
 
-      version.injectState(uint8, sourceText, sourceEndPos);
+      version.injectState(uint8, sourceText, sourceStartPos, sourceByteLen);
 
       const { deserializeStr } = version;
 
