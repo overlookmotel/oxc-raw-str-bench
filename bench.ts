@@ -58,14 +58,38 @@ async function main() {
     const nonSourcePct =
       strBinOffsets.length > 0 ? (nonSourceCount / strBinOffsets.length) * 100 : 0;
 
-    return { ...fixture, stringsCount: strBinOffsets.length, asciiPct, nonSourcePct };
+    // % of strings containing at least one non-ASCII byte
+    let nonAsciiStrCount = 0;
+    for (const offset of strBinOffsets) {
+      const strPos = uint32[offset >> 2];
+      const strLen = uint32[(offset >> 2) + 2];
+      for (let i = strPos; i < strPos + strLen; i++) {
+        if (uint8[i] >= 128) {
+          nonAsciiStrCount++;
+          break;
+        }
+      }
+    }
+    const nonAsciiStrPct =
+      strBinOffsets.length > 0 ? (nonAsciiStrCount / strBinOffsets.length) * 100 : 0;
+
+    return {
+      ...fixture,
+      stringsCount: strBinOffsets.length,
+      asciiPct,
+      nonSourcePct,
+      nonAsciiStrPct,
+    };
   });
 
-  // Sort: ASCII % descending, then non-src % ascending, then name alphabetical
+  // Sort: ASCII % descending, non-src % ascending, unicode % ascending, name
   fixtures.sort((fixture1, fixture2) => {
     if (fixture1.asciiPct !== fixture2.asciiPct) return fixture2.asciiPct - fixture1.asciiPct;
     if (fixture1.nonSourcePct !== fixture2.nonSourcePct) {
       return fixture1.nonSourcePct - fixture2.nonSourcePct;
+    }
+    if (fixture1.nonAsciiStrPct !== fixture2.nonAsciiStrPct) {
+      return fixture1.nonAsciiStrPct - fixture2.nonAsciiStrPct;
     }
     return fixture1.name < fixture2.name ? -1 : 1;
   });
@@ -168,6 +192,8 @@ async function main() {
     ),
     asciiPct: fixtures.reduce((sum, fixture) => sum + fixture.asciiPct, 0) / numFixtures,
     nonSourcePct: fixtures.reduce((sum, fixture) => sum + fixture.nonSourcePct, 0) / numFixtures,
+    nonAsciiStrPct:
+      fixtures.reduce((sum, fixture) => sum + fixture.nonAsciiStrPct, 0) / numFixtures,
   } as (typeof fixtures)[0]);
 
   // Format % difference vs baseline, with sign padded to 2 digits
@@ -217,7 +243,9 @@ async function main() {
   console.log("* ASCII column is % of source length which is before first non-ASCII byte.");
   console.log('  "100%" for files which are 100% ASCII.');
   console.log("* non-src column is % of strings which are outside the source region.");
-  console.log('  "-" for files where all strings are in the source region.\n');
+  console.log('  "-" for files where all strings are in the source region.');
+  console.log("* unicode column is % of strings containing at least one non-ASCII byte.");
+  console.log('  "-" for files where all strings are ASCII.\n');
 
   // Define table columns: header, alignment, and values per row
   interface Column {
@@ -243,6 +271,13 @@ async function main() {
       align: "right",
       values: fixtures.map((fixture) =>
         fixture.nonSourcePct === 0 ? "-" : fixture.nonSourcePct.toFixed(2) + "%",
+      ),
+    },
+    {
+      header: "unicode",
+      align: "right",
+      values: fixtures.map((fixture) =>
+        fixture.nonAsciiStrPct === 0 ? "-" : fixture.nonAsciiStrPct.toFixed(3) + "%",
       ),
     },
     // One column per version
